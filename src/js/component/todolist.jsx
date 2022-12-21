@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const blankTask = {label: "", done: false,}
+
+const urlBase = "http://assets.breatheco.de/apis/fake/todos/user"
 
 const TodoList = () => {
 
@@ -8,7 +10,7 @@ const TodoList = () => {
 
     const [task, setTask] = useState(blankTask);
 
-    const [allTask, setAllTask] = useState([{label: "llorar", done: false,},{label: "si", done: false,}]);
+    const [allTask, setAllTask] = useState([]);
 
     const handleChange = (event) => {
         setTask({
@@ -17,30 +19,88 @@ const TodoList = () => {
         })
     };
 
-    const addTask = ({key}) => {
+    const getTask = async () => {
+        try {
+            let response = await fetch(`${urlBase}/lizu`)
+            let data = await response.json()
+            if (response.status == "404") {
+                createUser()
+            }
+            else if (response.ok) {
+                setAllTask(data)
+            }
+            else{
+                console.log("reza");
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+    };
+
+    const createUser = async () => {
+        try {
+            let response = await fetch(`${urlBase}/lizu`, {
+                method: "POST",
+                headers:{
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify([]),
+            })
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+
+    const addTask = async ({key}) => {
         if (key == "Enter") {
             if (task.label.trim() !== "") {
-                setAllTask([
-                    ...allTask,
-                    task
-                ])
-                
-                setTask(blankTask)
-                
-
+                try {
+                    let response = await fetch(`${urlBase}/lizu`, {
+                        method: "PUT",
+                        headers:{
+                            "Content-Type":"application/json"
+                        },
+                        body: JSON.stringify([...allTask, task]),
+                    });
+                    if (response.ok) {
+                        getTask()
+                        setTask(blankTask);
+                    }
+                } catch (error) {
+                    console.log(error);
+                }
 
             }
         }
     };
 
-    const deleteTask = (id) => {
-
+    const deleteTask = async (id) => {
         let newAllTask = allTask.filter((task, index) => id != index) 
-
+        try {
+            let response = await fetch(`${urlBase}/lizu`, {
+                method: "PUT",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body: JSON.stringify(newAllTask),
+            });
+            if (response.ok) {
+                getTask()
+            }
+        } catch (error) {
+            console.log(error);
+        }
+        
         setAllTask(newAllTask);
         
         console.log(newAllTask);
     };
+
+    useEffect(()=>{
+        getTask()
+    }, [])
 
 	return (
 
